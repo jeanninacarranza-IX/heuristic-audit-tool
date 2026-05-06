@@ -18,3 +18,7 @@ The serverless function reads `ANTHROPIC_API_KEY` from Vercel's environment vari
 ## Local development
 
 Open `index.html` in a browser to see the UI, but note the audit endpoint (`/api/audit`) only works on Vercel (or via `vercel dev`).
+
+## Deploys
+
+Push to `main` triggers an auto-deploy to Vercel.
