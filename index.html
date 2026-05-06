@@ -7,6 +7,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  (function() {
+    var stored = localStorage.getItem('theme');
+    var theme = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+</script>
 <style>
   :root {
     --ink: #111318;
@@ -30,6 +37,33 @@
     --radius: 10px;
     --radius-lg: 16px;
     --radius-xl: 24px;
+    --card: #fff;
+    --toast-bg: #1a1f2e;
+    --toast-fg: #fff;
+  }
+
+  [data-theme="dark"] {
+    --ink: #e8eaf2;
+    --ink-2: #b8bcc9;
+    --ink-3: #8a8e9e;
+    --ink-4: #5d6173;
+    --surface: #0e1018;
+    --surface-2: #181b27;
+    --surface-3: #232633;
+    --border: #2a2e3d;
+    --border-2: #3a3f52;
+    --accent: #6b7aff;
+    --accent-light: #1e2342;
+    --accent-mid: #8a98ff;
+    --sev0-bg:#16291c; --sev0:#7ed59a;
+    --sev1-bg:#2e2613; --sev1:#e0c876;
+    --sev2-bg:#3a1f0d; --sev2:#ff9a5e;
+    --sev3-bg:#3a1818; --sev3:#ff8585;
+    --sev4-bg:#c0242a; --sev4:#fff;
+    --qw-bg:#0d2620; --qw:#5cd5b3;
+    --card: #161924;
+    --toast-bg: #2a2f42;
+    --toast-fg: #fff;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,6 +75,7 @@
     font-size: 14px;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   /* ── LAYOUT ── */
@@ -50,7 +85,7 @@
   .sidebar {
     width: 230px;
     flex-shrink: 0;
-    background: #fff;
+    background: var(--card);
     border-right: 1px solid var(--border);
     padding: 24px 0 40px;
     position: sticky;
@@ -142,7 +177,7 @@
 
   .pdf-toast {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
-    background: #1a1f2e; color: #fff;
+    background: var(--toast-bg); color: var(--toast-fg);
     padding: 10px 22px; border-radius: 20px;
     font-size: 13px; font-weight: 500;
     z-index: 9999; opacity: 0;
@@ -179,7 +214,7 @@
   .upload-card {
     width: 100%;
     max-width: 560px;
-    background: #fff;
+    background: var(--card);
     border: 1px solid var(--border);
     border-radius: var(--radius-xl);
     padding: 32px;
@@ -328,7 +363,7 @@
   .hero-chip { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.2); }
 
   .summary-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
-  .summary-card { background: #fff; padding: 18px 24px; text-align: center; }
+  .summary-card { background: var(--card); padding: 18px 24px; text-align: center; }
   .summary-val { font-family: 'DM Serif Display', serif; font-size: 30px; line-height: 1; margin-bottom: 4px; }
   .summary-lbl { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
 
@@ -343,15 +378,15 @@
 
   .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
   .filter-label { font-size: 11px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; }
-  .filter-btn { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border-2); background: #fff; color: var(--ink-2); cursor: pointer; transition: all 0.15s; }
+  .filter-btn { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border-2); background: var(--card); color: var(--ink-2); cursor: pointer; transition: all 0.15s; }
   .filter-btn:hover { border-color: var(--accent-mid); color: var(--accent); }
   .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
-  .legend-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; padding: 12px 16px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  .legend-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; padding: 12px 16px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); }
   .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-2); }
   .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
 
-  .h-block { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden; transition: box-shadow 0.2s; }
+  .h-block { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden; transition: box-shadow 0.2s; }
   .h-block:hover { box-shadow: 0 2px 16px rgba(42,60,255,0.07); }
   .h-header { display: flex; align-items: center; gap: 12px; padding: 15px 20px; cursor: pointer; user-select: none; transition: background 0.15s; }
   .h-header:hover { background: var(--surface); }
@@ -390,7 +425,7 @@
   .rec-text { font-size:13px;color:var(--ink);line-height:1.65; }
 
   .overview-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
-  .ov-card { background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px; }
+  .ov-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px; }
   .ov-card h3 { font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px; }
   .bar-row { display:flex;align-items:center;gap:10px;margin-bottom:9px; }
   .bar-name { font-size:11px;color:var(--ink-2);width:82px;text-align:right;flex-shrink:0;line-height:1.3; }
@@ -415,6 +450,26 @@
 
   @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
   .h-block { animation: fadeIn 0.3s ease both; }
+
+  /* Theme toggle */
+  .theme-toggle {
+    margin-left: auto;
+    width: 28px; height: 28px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--ink-2);
+    padding: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .theme-toggle:hover { background: var(--surface-2); color: var(--ink); border-color: var(--border-2); }
+  .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .theme-toggle svg { width: 14px; height: 14px; }
+  .theme-icon-sun { display: none; }
+  [data-theme="dark"] .theme-icon-moon { display: none; }
+  [data-theme="dark"] .theme-icon-sun { display: inline-block; }
 </style>
 </head>
 <body>
@@ -433,6 +488,22 @@
           </svg>
         </div>
         <span class="brand-name">UX Audit</span>
+        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">
+          <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <line x1="12" y1="2" x2="12" y2="4"/>
+            <line x1="12" y1="20" x2="12" y2="22"/>
+            <line x1="4.93" y1="4.93" x2="6.34" y2="6.34"/>
+            <line x1="17.66" y1="17.66" x2="19.07" y2="19.07"/>
+            <line x1="2" y1="12" x2="4" y2="12"/>
+            <line x1="20" y1="12" x2="22" y2="12"/>
+            <line x1="4.93" y1="19.07" x2="6.34" y2="17.66"/>
+            <line x1="17.66" y1="6.34" x2="19.07" y2="4.93"/>
+          </svg>
+        </button>
       </div>
       <span class="brand-sub">Nielsen's 10 Heuristics</span>
     </div>
@@ -594,6 +665,17 @@
 </div>
 
 <script>
+(function() {
+  var btn = document.getElementById('theme-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', function() {
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+})();
+
 let auditData = null;
 let uploadedImages = [];
 
