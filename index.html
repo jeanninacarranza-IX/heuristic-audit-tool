@@ -730,16 +730,51 @@ dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classL
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
 dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
 
-function handleFiles(files) {
-  const imgs = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 12 - uploadedImages.length);
-  imgs.forEach(f => {
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = e => {
-      uploadedImages.push({ file: f, dataUrl: e.target.result });
-      renderPreviews();
+      const img = new Image();
+      img.onload = () => {
+        const maxDim = 1568;
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          if (width >= height) {
+            height = Math.round(height * maxDim / width);
+            width = maxDim;
+          } else {
+            width = Math.round(width * maxDim / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve({
+          file: { type: 'image/jpeg', name: file.name },
+          dataUrl: canvas.toDataURL('image/jpeg', 0.85)
+        });
+      };
+      img.onerror = () => reject(new Error('Could not decode image'));
+      img.src = e.target.result;
     };
-    reader.readAsDataURL(f);
+    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.readAsDataURL(file);
   });
+}
+
+async function handleFiles(files) {
+  const imgs = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 12 - uploadedImages.length);
+  for (const f of imgs) {
+    try {
+      const compressed = await compressImage(f);
+      uploadedImages.push(compressed);
+      renderPreviews();
+    } catch (err) {
+      console.error('Image compression failed:', err);
+    }
+  }
 }
 
 function renderPreviews() {
