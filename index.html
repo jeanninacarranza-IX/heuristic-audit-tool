@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Heuristic Audit Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #111318;
+    --ink-2: #3d4151;
+    --ink-3: #717585;
+    --ink-4: #a8aab8;
+    --surface: #f7f8fc;
+    --surface-2: #eef0f7;
+    --surface-3: #e4e7f2;
+    --border: #dde0ee;
+    --border-2: #c8cce0;
+    --accent: #2a3cff;
+    --accent-light: #eceffe;
+    --accent-mid: #7b8aff;
+    --sev0-bg:#edf6ee; --sev0:#1f6b2a;
+    --sev1-bg:#fdf6dc; --sev1:#7a5a00;
+    --sev2-bg:#fff0e6; --sev2:#9a4000;
+    --sev3-bg:#fce8e8; --sev3:#8b1a1a;
+    --sev4-bg:#c0242a; --sev4:#fff;
+    --qw-bg:#e2f5ef; --qw:#0f6e56;
+    --radius: 10px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--surface);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── LAYOUT ── */
+  .app { display: flex; min-height: 100vh; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 230px;
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid var(--border);
+    padding: 24px 0 40px;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-brand {
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .brand-mark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+  }
+  .brand-icon {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .brand-icon svg { width: 16px; height: 16px; }
+  .brand-name { font-size: 13px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+  .brand-sub { font-size: 11px; color: var(--ink-3); }
+
+  .sidebar-section { padding: 0 20px; margin-bottom: 8px; }
+  .sidebar-section-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-4); margin-bottom: 8px; display: block; }
+
+  .nav-list { list-style: none; }
+  .nav-list li a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 20px;
+    font-size: 12.5px; color: var(--ink-2);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    transition: all 0.15s;
+    line-height: 1.3;
+  }
+  .nav-list li a:hover { background: var(--surface); color: var(--accent); }
+  .nav-list li a.active { background: var(--accent-light); color: var(--accent); border-left-color: var(--accent); font-weight: 500; }
+  .nav-list li a .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-left: auto; }
+
+  .sidebar-divider { margin: 12px 20px; border: none; border-top: 1px solid var(--border); }
+
+  .sidebar-stats { padding: 0 20px; }
+  .stat-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; color: var(--ink-3); border-bottom: 1px dashed var(--border); }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row strong { font-weight: 600; color: var(--ink); }
+
+  .sidebar-new-btn {
+    margin: 16px 20px 0;
+    padding: 9px 14px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    width: calc(100% - 40px);
+    transition: opacity 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .sidebar-new-btn:hover { opacity: 0.88; }
+
+  .sidebar-pdf-btn {
+    margin: 8px 20px 0;
+    padding: 9px 14px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    font-weight: 500;
+    cursor: pointer;
+    width: calc(100% - 40px);
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .sidebar-pdf-btn:hover { background: var(--accent-light); border-color: var(--accent); }
+  .sidebar-pdf-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .pdf-toast {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    background: #1a1f2e; color: #fff;
+    padding: 10px 22px; border-radius: 20px;
+    font-size: 13px; font-weight: 500;
+    z-index: 9999; opacity: 0;
+    transition: opacity 0.25s;
+    pointer-events: none; white-space: nowrap;
+  }
+  .pdf-toast.show { opacity: 1; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; overflow-x: hidden; }
+
+  /* ── UPLOAD SCREEN ── */
+  .upload-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 32px;
+  }
+  .upload-screen.hidden { display: none; }
+
+  .upload-hero { text-align: center; max-width: 520px; margin-bottom: 40px; }
+  .upload-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .upload-hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    line-height: 1.15;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+  .upload-hero p { font-size: 14px; color: var(--ink-2); line-height: 1.7; }
+
+  .upload-card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 32px;
+    box-shadow: 0 4px 32px rgba(42,60,255,0.06);
+  }
+
+  .url-row { margin-bottom: 20px; }
+  .field-label { font-size: 12px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; display: block; }
+  .url-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--ink);
+    background: var(--surface);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  .url-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(42,60,255,0.1); }
+  .url-input::placeholder { color: var(--ink-4); }
+
+  .drop-zone {
+    border: 2px dashed var(--border-2);
+    border-radius: var(--radius-lg);
+    padding: 32px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-light); }
+  .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon { font-size: 32px; margin-bottom: 10px; line-height: 1; }
+  .drop-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+  .drop-sub { font-size: 12px; color: var(--ink-3); }
+
+  .preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; margin-bottom: 20px; }
+  .preview-thumb {
+    position: relative;
+    aspect-ratio: 9/16;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .preview-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .preview-thumb .remove-btn {
+    position: absolute; top: 3px; right: 3px;
+    width: 18px; height: 18px;
+    background: rgba(0,0,0,0.6);
+    color: #fff;
+    border: none; border-radius: 50%;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+  }
+  .thumb-count { font-size: 10px; color: var(--ink-3); text-align: center; padding: 4px 0; }
+
+  .options-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+  .option-select {
+    padding: 9px 12px;
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px;
+    color: var(--ink);
+    background: var(--surface);
+    outline: none;
+    width: 100%;
+    cursor: pointer;
+  }
+  .option-select:focus { border-color: var(--accent); }
+
+  .generate-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-family: 'DM Serif Display', serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .generate-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ── LOADING SCREEN ── */
+  .loading-screen {
+    min-height: 100vh;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    text-align: center;
+  }
+  .loading-screen.active { display: flex; }
+
+  .loading-spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--surface-3);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin-bottom: 24px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loading-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); margin-bottom: 8px; }
+  .loading-steps { list-style: none; margin-top: 20px; display: flex; flex-direction: column; gap: 8px; max-width: 320px; }
+  .loading-step { font-size: 13px; color: var(--ink-3); display: flex; align-items: center; gap: 8px; }
+  .loading-step.done { color: var(--qw); }
+  .loading-step.done::before { content: '✓'; font-weight: 700; }
+  .loading-step.active { color: var(--accent); font-weight: 500; }
+  .loading-step.active::before { content: '›'; font-weight: 700; }
+  .loading-step:not(.done):not(.active)::before { content: '○'; color: var(--ink-4); }
+
+  /* ── RESULTS ── */
+  .results-screen { display: none; }
+  .results-screen.active { display: block; }
+
+  .results-hero {
+    background: var(--accent);
+    padding: 36px 48px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .results-hero::before {
+    content: '';
+    position: absolute; top: -60px; right: -60px;
+    width: 220px; height: 220px; border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .results-eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 8px; }
+  .results-hero h1 { font-family: 'DM Serif Display', serif; font-size: 26px; color: #fff; line-height: 1.2; margin-bottom: 8px; }
+  .results-hero p { font-size: 13px; color: rgba(255,255,255,0.7); max-width: 480px; line-height: 1.7; }
+  .hero-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+  .hero-chip { font-size: 11px; font-weight: 500; padding: 4px 10px; border-radius: 20px; background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); border: 1px solid rgba(255,255,255,0.2); }
+
+  .summary-strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border-bottom: 1px solid var(--border); }
+  .summary-card { background: #fff; padding: 18px 24px; text-align: center; }
+  .summary-val { font-family: 'DM Serif Display', serif; font-size: 30px; line-height: 1; margin-bottom: 4px; }
+  .summary-lbl { font-size: 11px; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 500; }
+
+  .results-content { padding: 28px 40px 64px; }
+
+  .tabs { display: flex; border-bottom: 2px solid var(--border); margin-bottom: 24px; }
+  .tab-btn { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; padding: 9px 18px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -2px; color: var(--ink-3); cursor: pointer; transition: all 0.15s; }
+  .tab-btn:hover { color: var(--accent); }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .filter-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+  .filter-label { font-size: 11px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 4px; }
+  .filter-btn { font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border-2); background: #fff; color: var(--ink-2); cursor: pointer; transition: all 0.15s; }
+  .filter-btn:hover { border-color: var(--accent-mid); color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .legend-row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; padding: 12px 16px; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); }
+  .legend-item { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--ink-2); }
+  .legend-dot { width: 9px; height: 9px; border-radius: 50%; }
+
+  .h-block { background: #fff; border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 10px; overflow: hidden; transition: box-shadow 0.2s; }
+  .h-block:hover { box-shadow: 0 2px 16px rgba(42,60,255,0.07); }
+  .h-header { display: flex; align-items: center; gap: 12px; padding: 15px 20px; cursor: pointer; user-select: none; transition: background 0.15s; }
+  .h-header:hover { background: var(--surface); }
+  .h-header:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .h-num { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--ink-4); min-width: 30px; line-height: 1; }
+  .h-titles { flex: 1; }
+  .h-title { font-size: 14px; font-weight: 600; color: var(--ink); }
+  .h-sub { font-size: 12px; color: var(--ink-3); margin-top: 1px; }
+  .h-badges { display: flex; align-items: center; gap: 7px; }
+  .sev-pill { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
+  .sev-0 { background:var(--sev0-bg);color:var(--sev0); }
+  .sev-1 { background:var(--sev1-bg);color:var(--sev1); }
+  .sev-2 { background:var(--sev2-bg);color:var(--sev2); }
+  .sev-3 { background:var(--sev3-bg);color:var(--sev3); }
+  .sev-4 { background:var(--sev4-bg);color:var(--sev4); }
+  .qw-pill { font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;background:var(--qw-bg);color:var(--qw); }
+  .issue-ct { font-size:12px;color:var(--ink-3); }
+  .chevron { font-size:13px;color:var(--ink-4);transition:transform 0.2s;flex-shrink:0; }
+  .chevron.open { transform: rotate(180deg); }
+
+  .h-body { display:none; border-top:1px solid var(--border); }
+  .h-body.open { display:block; }
+  .h-principle { padding:12px 20px; background:var(--surface); font-size:12.5px;color:var(--ink-2);font-style:italic;border-bottom:1px solid var(--border);line-height:1.65; }
+  .h-principle strong { font-style:normal;color:var(--accent);font-weight:500; }
+
+  .issues-list { padding:16px 20px;display:flex;flex-direction:column;gap:12px; }
+  .issue-card { border:1px solid var(--border);border-radius:var(--radius);overflow:hidden; }
+  .issue-top { padding:14px 16px; }
+  .issue-tags { display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:8px; }
+  .tag { font-size:11px;padding:2px 8px;border-radius:20px;background:var(--surface-2);color:var(--ink-2);border:1px solid var(--border); }
+  .issue-title { font-size:13.5px;font-weight:600;color:var(--ink);margin-bottom:6px;line-height:1.4; }
+  .issue-desc { font-size:13px;color:var(--ink-2);line-height:1.65; }
+  .rec-section { background:var(--surface);border-top:1px solid var(--border);padding:13px 16px; }
+  .rec-label { font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:5px;display:flex;align-items:center;gap:5px; }
+  .rec-label::before { content:'→';font-size:12px; }
+  .rec-text { font-size:13px;color:var(--ink);line-height:1.65; }
+
+  .overview-grid { display:grid;grid-template-columns:1fr 1fr;gap:16px; }
+  .ov-card { background:#fff;border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px; }
+  .ov-card h3 { font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px; }
+  .bar-row { display:flex;align-items:center;gap:10px;margin-bottom:9px; }
+  .bar-name { font-size:11px;color:var(--ink-2);width:82px;text-align:right;flex-shrink:0;line-height:1.3; }
+  .bar-bg { flex:1;height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden; }
+  .bar-fill { height:100%;border-radius:4px;transition:width .5s ease; }
+  .bar-val { font-size:11px;font-weight:600;min-width:16px;text-align:right; }
+  .flow-row { display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px dashed var(--border);font-size:13px; }
+  .flow-row:last-child { border-bottom:none; }
+  .flow-name { color:var(--ink-2); }
+  .flow-count { font-weight:600;color:var(--ink); }
+  .qw-list { list-style:none; }
+  .qw-list li { display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dashed var(--border);font-size:12.5px;color:var(--ink-2);line-height:1.4; }
+  .qw-list li:last-child { border-bottom:none; }
+  .qw-list li::before { content:'✓';color:var(--qw);font-weight:700;flex-shrink:0; }
+
+  .error-msg { background:var(--sev3-bg);color:var(--sev3);padding:12px 16px;border-radius:var(--radius);font-size:13px;margin-bottom:16px;border:1px solid #f5c2c2; }
+
+  /* scrollbar */
+  .sidebar::-webkit-scrollbar { width:4px; }
+  .sidebar::-webkit-scrollbar-track { background:transparent; }
+  .sidebar::-webkit-scrollbar-thumb { background:var(--border-2);border-radius:2px; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+  .h-block { animation: fadeIn 0.3s ease both; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" aria-label="Evaluation navigation">
+    <div class="sidebar-brand">
+      <div class="brand-mark">
+        <div class="brand-icon">
+          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="5" height="5" rx="1.5" fill="white"/>
+            <rect x="9" y="2" width="5" height="5" rx="1.5" fill="white" opacity=".6"/>
+            <rect x="2" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".6"/>
+            <rect x="9" y="9" width="5" height="5" rx="1.5" fill="white" opacity=".3"/>
+          </svg>
+        </div>
+        <span class="brand-name">UX Audit</span>
+      </div>
+      <span class="brand-sub">Nielsen's 10 Heuristics</span>
+    </div>
+
+    <div id="sidebar-heuristics" style="flex:1">
+      <div class="sidebar-section">
+        <span class="sidebar-section-label">Heuristics</span>
+        <p style="font-size:12px;color:var(--ink-4);line-height:1.5;padding:4px 0">Upload screenshots to generate your audit</p>
+      </div>
+    </div>
+
+    <div id="sidebar-stats" style="display:none">
+      <hr class="sidebar-divider">
+      <div class="sidebar-section">
+        <span class="sidebar-section-label">Summary</span>
+        <div class="sidebar-stats" id="stat-block"></div>
+      </div>
+    </div>
+
+    <button class="sidebar-new-btn" onclick="resetToUpload()">
+      <span>＋</span> New audit
+    </button>
+    <button class="sidebar-pdf-btn" id="pdf-btn" disabled onclick="downloadPDF()">
+      ↓ Download PDF
+    </button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- UPLOAD SCREEN -->
+    <div class="upload-screen" id="upload-screen">
+      <div class="upload-hero">
+        <p class="upload-eyebrow">AI-powered UX audit</p>
+        <h1>Heuristic Evaluation<br>in seconds</h1>
+        <p>Upload screenshots of any website or app and provide the URL. Claude will analyze them against Nielsen's 10 usability heuristics and generate a full report with severity ratings and redesign recommendations.</p>
+      </div>
+
+      <div class="upload-card">
+        <div id="error-display"></div>
+
+        <div class="url-row">
+          <label class="field-label" for="site-url">Website URL</label>
+          <input class="url-input" type="url" id="site-url" placeholder="https://example.com" autocomplete="off">
+        </div>
+
+        <label class="field-label">Screenshots <span style="font-weight:400;color:var(--ink-3)">(upload up to 12)</span></label>
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept="image/*" multiple>
+          <div class="drop-icon">📂</div>
+          <div class="drop-title">Drop screenshots here</div>
+          <div class="drop-sub">PNG, JPG, WebP — up to 12 images</div>
+        </div>
+
+        <div class="preview-grid" id="preview-grid" style="display:none"></div>
+
+        <div class="options-row">
+          <div>
+            <label class="field-label" for="flow-focus">Flow focus</label>
+            <select class="option-select" id="flow-focus">
+              <option value="both">Both flows equally</option>
+              <option value="guest">Guest / join flow</option>
+              <option value="host">Host / create flow</option>
+              <option value="nav">Navigation & IA</option>
+              <option value="general">General / homepage</option>
+            </select>
+          </div>
+          <div>
+            <label class="field-label" for="audience">Audience</label>
+            <select class="option-select" id="audience">
+              <option value="client">Client presentation</option>
+              <option value="portfolio">Portfolio / case study</option>
+              <option value="internal">Internal stakeholder</option>
+              <option value="dev">Developer handoff</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="generate-btn" id="generate-btn" onclick="runAudit()">
+          <span>✦</span> Generate heuristic evaluation
+        </button>
+      </div>
+    </div>
+
+    <!-- LOADING SCREEN -->
+    <div class="loading-screen" id="loading-screen">
+      <div class="loading-spinner"></div>
+      <div class="loading-title">Analyzing your screenshots…</div>
+      <p style="font-size:13px;color:var(--ink-3);max-width:300px;margin-top:8px">Claude is reviewing your screenshots against all 10 Nielsen heuristics</p>
+      <ul class="loading-steps" id="loading-steps">
+        <li class="loading-step active">Analyzing screenshots</li>
+        <li class="loading-step">Identifying usability issues</li>
+        <li class="loading-step">Assigning severity ratings</li>
+        <li class="loading-step">Writing redesign recommendations</li>
+        <li class="loading-step">Compiling your report</li>
+      </ul>
+    </div>
+
+    <!-- RESULTS SCREEN -->
+    <div class="results-screen" id="results-screen">
+      <header class="results-hero">
+        <p class="results-eyebrow">UX Audit · Nielsen's 10 Heuristics</p>
+        <h1 id="result-title">Heuristic Evaluation</h1>
+        <p id="result-subtitle"></p>
+        <div class="hero-chips" id="hero-chips"></div>
+        <button onclick="downloadPDF()" style="margin-top:18px;padding:9px 20px;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.35);border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;transition:background 0.15s;display:inline-flex;align-items:center;gap:7px;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">↓ Download PDF report</button>
+      </header>
+
+      <div class="summary-strip">
+        <div class="summary-card"><div class="summary-val" id="stat-total">—</div><div class="summary-lbl">Total issues</div></div>
+        <div class="summary-card"><div class="summary-val" id="stat-crit" style="color:#c0242a">—</div><div class="summary-lbl">Sev 3–4 critical</div></div>
+        <div class="summary-card"><div class="summary-val" id="stat-minor" style="color:#9a4000">—</div><div class="summary-lbl">Sev 2 minor</div></div>
+        <div class="summary-card"><div class="summary-val" id="stat-qw" style="color:#0f6e56">—</div><div class="summary-lbl">Quick wins</div></div>
+      </div>
+
+      <div class="results-content">
+        <div class="tabs" role="tablist">
+          <button class="tab-btn active" role="tab" aria-selected="true" onclick="switchTab('issues',this)">Issues by heuristic</button>
+          <button class="tab-btn" role="tab" aria-selected="false" onclick="switchTab('overview',this)">Severity overview</button>
+        </div>
+
+        <div id="panel-issues" class="tab-panel active" role="tabpanel">
+          <div class="filter-bar" role="group" aria-label="Filter by flow">
+            <span class="filter-label">Filter:</span>
+            <button class="filter-btn active" onclick="filterH('all',this)">All flows</button>
+            <button class="filter-btn" onclick="filterH('guest',this)">Guest flow</button>
+            <button class="filter-btn" onclick="filterH('host',this)">Host flow</button>
+            <button class="filter-btn" onclick="filterH('nav',this)">Navigation</button>
+            <button class="filter-btn" onclick="filterH('global',this)">Global</button>
+          </div>
+          <div class="legend-row" role="note">
+            <span style="font-size:11px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.07em">Severity:</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--sev0)"></span>0 no issue</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--sev1)"></span>1 cosmetic</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--sev2)"></span>2 minor</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--sev3)"></span>3 major</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--sev4-bg)"></span>4 catastrophic</span>
+            <span class="legend-item"><span class="legend-dot" style="background:var(--qw)"></span>quick win</span>
+          </div>
+          <div id="heuristics-list"></div>
+        </div>
+
+        <div id="panel-overview" class="tab-panel" role="tabpanel">
+          <div class="overview-grid">
+            <div class="ov-card"><h3>Max severity per heuristic</h3><div id="score-bars"></div></div>
+            <div class="ov-card">
+              <h3>Issues by flow</h3>
+              <div id="flow-breakdown"></div>
+              <br>
+              <h3>Quick wins</h3>
+              <ul class="qw-list" id="qw-list"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+let auditData = null;
+let uploadedImages = [];
+
+const HEURISTIC_NAMES = [
+  '', // 0 placeholder
+  'Visibility of system status',
+  'Match: system & real world',
+  'User control & freedom',
+  'Consistency & standards',
+  'Error prevention',
+  'Recognition over recall',
+  'Flexibility & efficiency',
+  'Aesthetic & minimalist design',
+  'Help users recover from errors',
+  'Help & documentation'
+];
+
+const HEURISTIC_SUBS = [
+  '',
+  'Keep users informed with timely feedback',
+  'Speak the user\'s language, not system jargon',
+  'Provide clear emergency exits',
+  'Same words, same actions, always',
+  'Design out the conditions that cause errors',
+  'Make choices visible — minimize memory load',
+  'Support novice and expert users alike',
+  'Every element should earn its place',
+  'Plain-language errors that point to solutions',
+  'Task-focused help, right when needed'
+];
+
+const HEURISTIC_DESC = [
+  '',
+  'The system should always keep users informed about what is going on through appropriate feedback within reasonable time.',
+  'The system should speak the users\' language — words, phrases, and concepts familiar to the user rather than system-oriented terms.',
+  'Users often choose system functions by mistake. They need clearly marked emergency exits to leave unwanted states.',
+  'Users should not have to wonder whether different words, situations, or actions mean the same thing. Follow platform conventions.',
+  'Even better than good error messages is careful design that prevents problems from occurring in the first place.',
+  'Minimize the user\'s memory load by making objects, actions, and options visible.',
+  'Accelerators unseen by novice users may speed up interaction for expert users so the system can cater to both.',
+  'Dialogues should not contain irrelevant or rarely needed information. Every extra unit competes with relevant content.',
+  'Error messages should be in plain language, precisely indicate the problem, and constructively suggest a solution.',
+  'Even though the system should be usable without documentation, help should be easy to search and focused on the user\'s task.'
+];
+
+// File handling
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+fileInput.addEventListener('change', e => handleFiles(e.target.files));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); handleFiles(e.dataTransfer.files); });
+
+function handleFiles(files) {
+  const imgs = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, 12 - uploadedImages.length);
+  imgs.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      uploadedImages.push({ file: f, dataUrl: e.target.result });
+      renderPreviews();
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('preview-grid');
+  if (!uploadedImages.length) { grid.style.display = 'none'; return; }
+  grid.style.display = 'grid';
+  grid.innerHTML = uploadedImages.map((img, i) => `
+    <div class="preview-thumb">
+      <img src="${img.dataUrl}" alt="Screenshot ${i+1}">
+      <button class="remove-btn" onclick="removeImage(${i})" aria-label="Remove screenshot ${i+1}">✕</button>
+    </div>
+  `).join('') + `<div class="thumb-count">${uploadedImages.length} screenshot${uploadedImages.length>1?'s':''}</div>`;
+}
+
+function removeImage(i) {
+  uploadedImages.splice(i, 1);
+  renderPreviews();
+}
+
+async function runAudit() {
+  const url = document.getElementById('site-url').value.trim();
+  const errDiv = document.getElementById('error-display');
+  errDiv.innerHTML = '';
+
+  if (!url) { errDiv.innerHTML = '<div class="error-msg">Please enter a website URL.</div>'; return; }
+  if (!uploadedImages.length) { errDiv.innerHTML = '<div class="error-msg">Please upload at least one screenshot.</div>'; return; }
+
+  const flow = document.getElementById('flow-focus').value;
+  const audience = document.getElementById('audience').value;
+
+  showScreen('loading');
+  animateLoadingSteps();
+
+  try {
+    const messages = buildMessages(url, flow, audience);
+    const response = await fetch('/api/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 8000,
+        messages
+      })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+
+    const text = data.content.find(b => b.type === 'text')?.text || '';
+    const clean = text.replace(/```json\s*/g,'').replace(/```\s*/g,'').trim();
+    const parsed = JSON.parse(clean);
+    auditData = parsed;
+    renderResults(url, parsed);
+    showScreen('results');
+  } catch(err) {
+    showScreen('upload');
+    document.getElementById('error-display').innerHTML = `<div class="error-msg">Error: ${err.message}. Please try again.</div>`;
+  }
+}
+
+function buildMessages(url, flow, audience) {
+  const imgContent = uploadedImages.map(img => ({
+    type: 'image',
+    source: {
+      type: 'base64',
+      media_type: img.file.type,
+      data: img.dataUrl.split(',')[1]
+    }
+  }));
+
+  const flowText = {
+    both: 'both the guest/join flow and the host/create flow equally',
+    guest: 'the guest / join a dinner flow',
+    host: 'the host / create a dinner flow',
+    nav: 'navigation and information architecture',
+    general: 'the general homepage and onboarding experience'
+  }[flow];
+
+  const audienceText = {
+    client: 'a client presentation — be thorough, professional, and diplomatically direct',
+    portfolio: 'a portfolio/case study — demonstrate deep UX expertise and insight',
+    internal: 'an internal stakeholder review — be candid and action-oriented',
+    dev: 'a developer handoff — be specific and technically actionable'
+  }[audience];
+
+  imgContent.push({
+    type: 'text',
+    text: `You are a senior product designer conducting a professional heuristic evaluation of ${url}. 
+    
+Focus: ${flowText}. Tone: ${audienceText}.
+
+Analyze these screenshots against Nielsen's 10 usability heuristics. For EACH heuristic, identify 1-3 specific issues you can actually see in the screenshots. Be specific about what you observe — reference actual UI elements visible in the images.
+
+Return ONLY valid JSON (no markdown fences, no preamble), exactly this shape:
+
+{
+  "siteName": "site name from URL",
+  "siteUrl": "${url}",
+  "totalIssues": number,
+  "criticalCount": number,
+  "minorCount": number,
+  "quickWinCount": number,
+  "flowsCovered": ["flow1", "flow2"],
+  "heuristics": [
+    {
+      "id": 1,
+      "issues": [
+        {
+          "title": "short issue title",
+          "severity": 0-4,
+          "flow": "guest|host|nav|global",
+          "tags": ["Tag1", "Tag2"],
+          "isQuickWin": true|false,
+          "description": "2-3 sentence description referencing what you see in the screenshots. Be specific.",
+          "recommendation": "2-3 sentence concrete redesign recommendation with rationale."
+        }
+      ]
+    }
+  ],
+  "quickWins": ["brief quick win 1", "brief quick win 2"],
+  "flowBreakdown": {"guest": n, "host": n, "nav": n, "global": n}
+}`
+  });
+
+  return [{ role: 'user', content: imgContent }];
+}
+
+let loadingInterval;
+function animateLoadingSteps() {
+  const steps = document.querySelectorAll('.loading-step');
+  let current = 0;
+  steps.forEach(s => { s.className = 'loading-step'; });
+  steps[0].classList.add('active');
+  clearInterval(loadingInterval);
+  loadingInterval = setInterval(() => {
+    if (current < steps.length - 1) {
+      steps[current].classList.remove('active');
+      steps[current].classList.add('done');
+      current++;
+      steps[current].classList.add('active');
+    }
+  }, 1800);
+}
+
+function showScreen(name) {
+  clearInterval(loadingInterval);
+  document.getElementById('upload-screen').classList.toggle('hidden', name !== 'upload');
+  const ls = document.getElementById('loading-screen');
+  ls.style.display = name === 'loading' ? 'flex' : 'none';
+  document.getElementById('results-screen').classList.toggle('active', name === 'results');
+}
+
+function resetToUpload() {
+  auditData = null;
+  uploadedImages = [];
+  document.getElementById('preview-grid').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  document.getElementById('site-url').value = '';
+  document.getElementById('error-display').innerHTML = '';
+  document.getElementById('sidebar-heuristics').innerHTML = `
+    <div class="sidebar-section">
+      <span class="sidebar-section-label">Heuristics</span>
+      <p style="font-size:12px;color:var(--ink-4);line-height:1.5;padding:4px 0">Upload screenshots to generate your audit</p>
+    </div>`;
+  document.getElementById('sidebar-stats').style.display = 'none';
+  const pdfBtn = document.getElementById('pdf-btn');
+  if (pdfBtn) pdfBtn.disabled = true;
+  showScreen('upload');
+}
+
+function renderResults(url, d) {
+  document.getElementById('result-title').textContent = `${d.siteName} — Heuristic Evaluation`;
+  document.getElementById('result-subtitle').textContent = `A product design audit of ${d.siteUrl} covering ${d.flowsCovered?.join(' and ') || 'key user flows'}, evaluated against Nielsen's 10 usability heuristics with full redesign recommendations.`;
+
+  const chips = document.getElementById('hero-chips');
+  chips.innerHTML = [d.siteUrl, 'Nielsen 10 heuristics', 'Severity 0–4', new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'})].map(c=>`<span class="hero-chip">${c}</span>`).join('');
+
+  document.getElementById('stat-total').textContent = d.totalIssues;
+  document.getElementById('stat-crit').textContent = d.criticalCount;
+  document.getElementById('stat-minor').textContent = d.minorCount;
+  document.getElementById('stat-qw').textContent = d.quickWinCount;
+
+  // Sidebar
+  document.getElementById('sidebar-heuristics').innerHTML = `
+    <div class="sidebar-section">
+      <span class="sidebar-section-label">Heuristics</span>
+      <ul class="nav-list" id="h-nav">
+        ${d.heuristics.map((h,i) => {
+          const maxSev = h.issues.length ? Math.max(...h.issues.map(x=>x.severity)) : 0;
+          const col = ['#1f6b2a','#7a5a00','#9a4000','#8b1a1a','#c0242a'][maxSev] || '#aaa';
+          return `<li><a href="#h${h.id}" onclick="scrollToH(${h.id})"><span>H${h.id} ${HEURISTIC_NAMES[h.id].split(' ').slice(0,3).join(' ')}</span><span class="dot" style="background:${col}"></span></a></li>`;
+        }).join('')}
+      </ul>
+    </div>`;
+
+  document.getElementById('sidebar-stats').style.display = 'block';
+  document.getElementById('stat-block').innerHTML = [
+    ['Total issues', d.totalIssues, ''],
+    ['Severity 3–4', d.criticalCount, 'color:#c0242a'],
+    ['Severity 2', d.minorCount, 'color:#9a4000'],
+    ['Quick wins', d.quickWinCount, 'color:#0f6e56'],
+  ].map(([l,v,s])=>`<div class="stat-row"><span>${l}</span><strong style="${s}">${v}</strong></div>`).join('');
+
+  renderHeuristics('all', d);
+  renderOverview(d);
+  const pdfBtn = document.getElementById('pdf-btn');
+  if (pdfBtn) pdfBtn.disabled = false;
+}
+
+function renderHeuristics(filterFlow, d) {
+  const data = d || auditData;
+  if (!data) return;
+  const container = document.getElementById('heuristics-list');
+  container.innerHTML = '';
+  data.heuristics.forEach((h, idx) => {
+    const filtered = filterFlow === 'all' ? h.issues : h.issues.filter(i => i.flow === filterFlow);
+    if (!filtered.length) return;
+    const maxSev = Math.max(...filtered.map(i => i.severity));
+    const hasQW = filtered.some(i => i.isQuickWin);
+    const block = document.createElement('div');
+    block.className = 'h-block';
+    block.id = `h${h.id}`;
+    block.style.animationDelay = `${idx * 0.05}s`;
+    block.innerHTML = `
+      <div class="h-header" role="button" tabindex="0" aria-expanded="false" onclick="toggleH(this)" onkeydown="if(event.key==='Enter'||event.key===' ')toggleH(this)">
+        <span class="h-num">${String(h.id).padStart(2,'0')}</span>
+        <div class="h-titles">
+          <div class="h-title">${HEURISTIC_NAMES[h.id] || 'Heuristic '+h.id}</div>
+          <div class="h-sub">${HEURISTIC_SUBS[h.id] || ''}</div>
+        </div>
+        <div class="h-badges">
+          <span class="sev-pill sev-${maxSev}">Sev ${maxSev}</span>
+          ${hasQW ? '<span class="qw-pill">Quick win</span>' : ''}
+          <span class="issue-ct">${filtered.length} issue${filtered.length>1?'s':''}</span>
+          <span class="chevron" aria-hidden="true">▾</span>
+        </div>
+      </div>
+      <div class="h-body">
+        <p class="h-principle">Nielsen: <strong>${HEURISTIC_NAMES[h.id]}</strong> — ${HEURISTIC_DESC[h.id]}</p>
+        <div class="issues-list">
+          ${filtered.map(iss => `
+            <div class="issue-card">
+              <div class="issue-top">
+                <div class="issue-tags">
+                  <span class="sev-pill sev-${iss.severity}">Severity ${iss.severity}</span>
+                  ${(iss.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}
+                  ${iss.isQuickWin ? '<span class="qw-pill">Quick win</span>' : ''}
+                </div>
+                <div class="issue-title">${iss.title}</div>
+                <div class="issue-desc">${iss.description}</div>
+              </div>
+              <div class="rec-section">
+                <div class="rec-label">Redesign recommendation</div>
+                <div class="rec-text">${iss.recommendation}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>`;
+    container.appendChild(block);
+  });
+}
+
+function renderOverview(d) {
+  const bars = document.getElementById('score-bars');
+  bars.innerHTML = '';
+  const sevColors = ['#1f6b2a','#7a5a00','#9a4000','#8b1a1a','#c0242a'];
+  d.heuristics.forEach(h => {
+    const max = h.issues.length ? Math.max(...h.issues.map(i=>i.severity)) : 0;
+    const pct = Math.round((max/4)*100);
+    const col = sevColors[max] || '#aaa';
+    bars.innerHTML += `<div class="bar-row">
+      <div class="bar-name">H${h.id} ${HEURISTIC_NAMES[h.id].split(' ').slice(0,2).join(' ')}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+      <div class="bar-val" style="color:${col}">${max}</div>
+    </div>`;
+  });
+
+  const fb = document.getElementById('flow-breakdown');
+  fb.innerHTML = Object.entries(d.flowBreakdown || {}).map(([k,v])=>`
+    <div class="flow-row"><span class="flow-name">${k}</span><span class="flow-count">${v}</span></div>`).join('');
+
+  const qwl = document.getElementById('qw-list');
+  qwl.innerHTML = (d.quickWins||[]).map(q=>`<li>${q}</li>`).join('');
+}
+
+function toggleH(el) {
+  const body = el.nextElementSibling;
+  const chev = el.querySelector('.chevron');
+  const open = body.classList.toggle('open');
+  chev.classList.toggle('open', open);
+  el.setAttribute('aria-expanded', open);
+}
+
+function filterH(flow, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderHeuristics(flow);
+}
+
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected','false'); });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active'); btn.setAttribute('aria-selected','true');
+  document.getElementById('panel-'+name).classList.add('active');
+}
+
+function scrollToH(id) {
+  const el = document.getElementById('h'+id);
+  if (el) { el.scrollIntoView({behavior:'smooth',block:'start'}); }
+}
+
+function showToast(msg, duration = 2800) {
+  let t = document.getElementById('pdf-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'pdf-toast'; t.className = 'pdf-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+function downloadPDF() {
+  if (!auditData) return;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
+
+  const PW = doc.internal.pageSize.getWidth();
+  const PH = doc.internal.pageSize.getHeight();
+  const ML = 48, MR = 48, MT = 48;
+  const CW = PW - ML - MR;
+  let y = MT;
+
+  const SEV_COLORS = {
+    0: [31,107,42], 1: [122,90,0], 2: [154,64,0], 3: [139,26,26], 4: [192,36,42]
+  };
+  const ACCENT = [42,60,255];
+  const INK = [17,19,24];
+  const INK2 = [61,65,81];
+  const INK3 = [113,117,133];
+  const BORDER = [221,224,238];
+  const QW_COL = [15,110,86];
+
+  function checkPage(needed = 60) {
+    if (y + needed > PH - 40) { doc.addPage(); y = MT; }
+  }
+
+  function hRule(yt, col = BORDER) {
+    doc.setDrawColor(...col);
+    doc.setLineWidth(0.5);
+    doc.line(ML, yt, PW - MR, yt);
+  }
+
+  function wrapText(text, x, yw, maxW, fontSize, color, lineH, bold = false) {
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...color);
+    doc.setFont('helvetica', bold ? 'bold' : 'normal');
+    const lines = doc.splitTextToSize(String(text), maxW);
+    lines.forEach(line => {
+      checkPage(lineH + 4);
+      doc.text(line, x, yw);
+      yw += lineH;
+    });
+    return yw;
+  }
+
+  function pill(label, x, yw, bgColor, textColor, fontSize = 8) {
+    doc.setFontSize(fontSize);
+    doc.setFont('helvetica', 'bold');
+    const tw = doc.getTextWidth(label);
+    const ph = 13, pw2 = tw + 14, rx = 6;
+    doc.setFillColor(...bgColor);
+    doc.setDrawColor(...bgColor);
+    doc.roundedRect(x, yw - 9, pw2, ph, rx, rx, 'F');
+    doc.setTextColor(...textColor);
+    doc.text(label, x + 7, yw);
+    return x + pw2 + 6;
+  }
+
+  // ── COVER PAGE ──────────────────────────────────────────────
+  doc.setFillColor(...ACCENT);
+  doc.rect(0, 0, PW, 180, 'F');
+
+  doc.setFontSize(9); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255,255,255); doc.setGlobalAlpha(0.55);
+  doc.text('UX AUDIT  ·  NIELSEN\'S 10 HEURISTICS', ML, 60);
+  doc.setGlobalAlpha(1);
+
+  doc.setFontSize(26); doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255,255,255);
+  doc.text(`${auditData.siteName}`, ML, 95);
+  doc.setFontSize(14); doc.setFont('helvetica', 'normal');
+  doc.text('Heuristic Evaluation Report', ML, 116);
+
+  doc.setFontSize(9); doc.setTextColor(255,255,255); doc.setGlobalAlpha(0.6);
+  doc.text(`${auditData.siteUrl}   ·   ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}`, ML, 158);
+  doc.setGlobalAlpha(1);
+
+  // Summary strip
+  y = 210;
+  const statW = CW / 4;
+  const stats = [
+    { label: 'Total issues', val: auditData.totalIssues, color: INK },
+    { label: 'Sev 3–4 critical', val: auditData.criticalCount, color: [192,36,42] },
+    { label: 'Sev 2 minor', val: auditData.minorCount, color: [154,64,0] },
+    { label: 'Quick wins', val: auditData.quickWinCount, color: QW_COL }
+  ];
+  stats.forEach((s, i) => {
+    const sx = ML + i * statW;
+    doc.setFontSize(28); doc.setFont('helvetica', 'bold'); doc.setTextColor(...s.color);
+    doc.text(String(s.val), sx, y + 28);
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK3);
+    doc.text(s.label.toUpperCase(), sx, y + 42);
+    if (i < 3) { doc.setDrawColor(...BORDER); doc.setLineWidth(0.5); doc.line(sx + statW, y + 4, sx + statW, y + 48); }
+  });
+  y += 68;
+  hRule(y); y += 24;
+
+  // Flow breakdown
+  if (auditData.flowBreakdown) {
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(...INK);
+    doc.text('Issues by flow', ML, y); y += 14;
+    Object.entries(auditData.flowBreakdown).forEach(([k, v]) => {
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK2);
+      doc.text(k.charAt(0).toUpperCase() + k.slice(1), ML + 8, y);
+      doc.setFont('helvetica', 'bold'); doc.setTextColor(...INK);
+      doc.text(String(v), ML + 120, y);
+      y += 14;
+    });
+    y += 8;
+  }
+
+  // Quick wins
+  if (auditData.quickWins?.length) {
+    checkPage(40);
+    hRule(y); y += 18;
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold'); doc.setTextColor(...INK);
+    doc.text('Quick wins', ML, y); y += 14;
+    auditData.quickWins.forEach(qw => {
+      checkPage(20);
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(QW_COL[0], QW_COL[1], QW_COL[2]);
+      doc.text('✓', ML + 4, y);
+      doc.setTextColor(...INK2);
+      const lines = doc.splitTextToSize(qw, CW - 20);
+      lines.forEach(ln => { doc.text(ln, ML + 18, y); y += 13; });
+    });
+    y += 6;
+  }
+
+  // ── HEURISTICS ───────────────────────────────────────────────
+  auditData.heuristics.forEach(h => {
+    if (!h.issues.length) return;
+    const maxSev = Math.max(...h.issues.map(i => i.severity));
+
+    doc.addPage(); y = MT;
+
+    // Heuristic header block
+    doc.setFillColor(247,248,252);
+    doc.roundedRect(ML, y, CW, 52, 6, 6, 'F');
+    doc.setDrawColor(...BORDER); doc.setLineWidth(0.5);
+    doc.roundedRect(ML, y, CW, 52, 6, 6, 'S');
+
+    doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(200,205,220);
+    doc.text(String(h.id).padStart(2,'0'), ML + 12, y + 32);
+
+    doc.setFontSize(12); doc.setFont('helvetica', 'bold'); doc.setTextColor(...INK);
+    doc.text(HEURISTIC_NAMES[h.id] || `Heuristic ${h.id}`, ML + 50, y + 22);
+    doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK3);
+    doc.text(HEURISTIC_SUBS[h.id] || '', ML + 50, y + 35);
+
+    // Sev pill in header
+    const sc = SEV_COLORS[maxSev] || INK3;
+    pill(`Sev ${maxSev}`, PW - MR - 60, y + 28, [...sc, 0.12].slice(0,3).map(v=>typeof v==='number'?Math.min(255,Math.round(v*1.8)):v), sc, 8);
+
+    y += 66;
+
+    // Principle quote
+    doc.setFontSize(8); doc.setFont('helvetica', 'italic'); doc.setTextColor(...INK3);
+    doc.setDrawColor(...ACCENT);
+    doc.setLineWidth(2);
+    doc.line(ML, y, ML, y + 22);
+    const descLines = doc.splitTextToSize(HEURISTIC_DESC[h.id] || '', CW - 14);
+    descLines.slice(0,2).forEach(ln => { doc.text(ln, ML + 10, y + 9); y += 11; });
+    y += 14;
+
+    // Issues
+    h.issues.forEach((iss, idx) => {
+      const sevC = SEV_COLORS[iss.severity] || INK3;
+      const estimatedH = 90 + (iss.description.length / 80) * 11 + (iss.recommendation.length / 80) * 11;
+      checkPage(estimatedH);
+
+      if (idx > 0) { hRule(y); y += 12; }
+
+      // Issue title row
+      let px = ML;
+      px = pill(`Severity ${iss.severity}`, px, y + 4,
+        [sevC[0]+180 > 255 ? 255 : sevC[0]+100, sevC[1]+80 > 255 ? 255 : sevC[1]+80, sevC[2]+80 > 255 ? 255 : sevC[2]+80].map(v=>Math.min(255,v)),
+        sevC, 7.5);
+      if (iss.isQuickWin) px = pill('Quick win', px, y + 4, [226,245,239], QW_COL, 7.5);
+      (iss.tags || []).slice(0,2).forEach(tag => { px = pill(tag, px, y + 4, [238,240,247], INK3, 7); });
+      y += 16;
+
+      doc.setFontSize(10.5); doc.setFont('helvetica', 'bold'); doc.setTextColor(...INK);
+      const titleLines = doc.splitTextToSize(iss.title, CW);
+      titleLines.forEach(ln => { checkPage(14); doc.text(ln, ML, y); y += 14; });
+      y += 2;
+
+      doc.setFontSize(9); doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK2);
+      const descL = doc.splitTextToSize(iss.description, CW);
+      descL.forEach(ln => { checkPage(13); doc.text(ln, ML, y); y += 13; });
+      y += 8;
+
+      // Recommendation box
+      const recLines = doc.splitTextToSize(iss.recommendation, CW - 20);
+      const boxH = recLines.length * 12 + 22;
+      checkPage(boxH + 8);
+      doc.setFillColor(247,248,252);
+      doc.setDrawColor(...BORDER);
+      doc.setLineWidth(0.5);
+      doc.roundedRect(ML, y, CW, boxH, 4, 4, 'FD');
+      doc.setDrawColor(...ACCENT);
+      doc.setLineWidth(2);
+      doc.line(ML, y + 4, ML, y + boxH - 4);
+
+      doc.setFontSize(7.5); doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...ACCENT);
+      doc.text('→  REDESIGN RECOMMENDATION', ML + 10, y + 13);
+      doc.setFontSize(8.5); doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK);
+      let ry = y + 24;
+      recLines.forEach(ln => { doc.text(ln, ML + 10, ry); ry += 12; });
+      y += boxH + 16;
+    });
+  });
+
+  // Page numbers
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...INK3);
+    doc.text(`${auditData.siteName} — Heuristic Evaluation`, ML, PH - 22);
+    doc.text(`${i} / ${totalPages}`, PW - MR, PH - 22, { align: 'right' });
+    doc.setDrawColor(...BORDER); doc.setLineWidth(0.4);
+    doc.line(ML, PH - 32, PW - MR, PH - 32);
+  }
+
+  const slug = (auditData.siteName || 'audit').toLowerCase().replace(/[^a-z0-9]/g, '-');
+  doc.save(`heuristic-evaluation-${slug}.pdf`);
+  showToast('PDF downloaded');
+}
+</script>
+</body>
+</html>
